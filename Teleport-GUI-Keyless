@@ -1,0 +1,168 @@
+-- Teleport GUI (Mobile Friendly / Drag / Clean / Admin Use)
+
+local player = game.Players.LocalPlayer
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "TeleportGUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- Frame principal
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 180, 0, 140)
+frame.Position = UDim2.new(0.02, 0, 0.2, 0)
+frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Parent = gui
+
+-- Cantos arredondados
+local corner = Instance.new("UICorner", frame)
+corner.CornerRadius = UDim.new(0, 8)
+
+-- Título
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -60, 0, 30)
+title.Position = UDim2.new(0, 10, 0, 5)
+title.BackgroundTransparency = 1
+title.Text = "Teleport GUI"
+title.TextColor3 = Color3.fromRGB(255, 80, 80)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 16
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = frame
+
+-- Botão minimizar
+local minimize = Instance.new("TextButton")
+minimize.Size = UDim2.new(0, 25, 0, 25)
+minimize.Position = UDim2.new(1, -55, 0, 5)
+minimize.Text = "-"
+minimize.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+minimize.TextColor3 = Color3.new(1,1,1)
+minimize.Font = Enum.Font.SourceSansBold
+minimize.TextSize = 18
+minimize.Parent = frame
+Instance.new("UICorner", minimize).CornerRadius = UDim.new(0,6)
+
+-- Botão fechar
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0, 25, 0, 25)
+close.Position = UDim2.new(1, -28, 0, 5)
+close.Text = "X"
+close.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+close.TextColor3 = Color3.new(1,1,1)
+close.Font = Enum.Font.SourceSansBold
+close.TextSize = 16
+close.Parent = frame
+Instance.new("UICorner", close).CornerRadius = UDim.new(0,6)
+
+-- Botão TP
+local tp = Instance.new("TextButton")
+tp.Size = UDim2.new(1, -20, 0, 40)
+tp.Position = UDim2.new(0, 10, 0, 40)
+tp.Text = "TP"
+tp.BackgroundColor3 = Color3.fromRGB(120, 0, 200)
+tp.TextColor3 = Color3.new(1,1,1)
+tp.Font = Enum.Font.SourceSansBold
+tp.TextSize = 18
+tp.Parent = frame
+Instance.new("UICorner", tp).CornerRadius = UDim.new(0,6)
+
+-- Botão salvar posição
+local save = Instance.new("TextButton")
+save.Size = UDim2.new(1, -20, 0, 40)
+save.Position = UDim2.new(0, 10, 0, 85)
+save.Text = "Save Position"
+save.BackgroundColor3 = Color3.fromRGB(120, 0, 200)
+save.TextColor3 = Color3.new(1,1,1)
+save.Font = Enum.Font.SourceSansBold
+save.TextSize = 16
+save.Parent = frame
+Instance.new("UICorner", save).CornerRadius = UDim.new(0,6)
+
+-- Drag (mobile + pc)
+local dragging, dragInput, dragStart, startPos
+
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+frame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		frame.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+-- Sistema
+local savedPosition = nil
+local minimized = false
+
+-- Animação
+local function tween(obj, props)
+	local t = TweenService:Create(obj, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props)
+	t:Play()
+end
+
+-- Salvar posição
+save.MouseButton1Click:Connect(function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		savedPosition = char.HumanoidRootPart.CFrame
+	end
+end)
+
+-- Teleportar
+tp.MouseButton1Click:Connect(function()
+	if savedPosition then
+		local char = player.Character
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			char.HumanoidRootPart.CFrame = savedPosition
+		end
+	end
+end)
+
+-- Minimizar
+minimize.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	
+	if minimized then
+		tween(frame, {Size = UDim2.new(0, 180, 0, 40)})
+		tp.Visible = false
+		save.Visible = false
+	else
+		tween(frame, {Size = UDim2.new(0, 180, 0, 140)})
+		wait(0.1)
+		tp.Visible = true
+		save.Visible = true
+	end
+end)
+
+-- Fechar
+close.MouseButton1Click:Connect(function()
+	gui:Destroy()
+end)
